@@ -7,3 +7,5 @@ class Event:
         self.start_time = start_time
         self.description = description
         self.created_at = datetime.now()
+    def is_upcoming(self):
+        return self.start_time > datetime.now()
