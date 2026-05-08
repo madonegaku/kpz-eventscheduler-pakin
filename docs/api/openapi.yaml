@@ -1,0 +1,334 @@
+openapi: 3.0.3
+info:
+  title: Pakin Event Scheduler API
+  description: "RESTful API для автоматизації планування подій. Система дозволяє користувачам створювати заходи, надсилати запрошення учасникам та уникати накладань у розкладі."
+  version: 1.0.0
+servers:
+  - url: https://virtserver.swaggerhub.com/pakineventscheduler/sss/1.0.0
+    description: SwaggerHub API Auto Mocking
+  - url: http://localhost:8000/api/v1
+    description: Локальний сервер розробки
+paths:
+  /users:
+    post:
+      tags:
+        - Users
+      summary: Реєстрація нового користувача
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+        required: true
+      responses:
+        "201":
+          description: Користувача успішно зареєстровано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Помилка валідації (невірний формат email тощо)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Отримати профіль користувача
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Профіль знайдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Користувача не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags:
+        - Users
+      summary: Видалити акаунт користувача
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Акаунт успішно видалено
+        "401":
+          description: Необхідна авторизація
+    patch:
+      tags:
+        - Users
+      summary: Оновити профіль користувача
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/users_id_body"
+      responses:
+        "200":
+          description: Профіль оновлено
+        "403":
+          description: Немає прав для редагування цього профілю
+  /events:
+    get:
+      tags:
+        - Events
+      summary: Отримати список усіх подій користувача
+      responses:
+        "200":
+          description: Список подій отримано
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      tags:
+        - Events
+      summary: Створити нову подію
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreate"
+        required: true
+      responses:
+        "201":
+          description: Подію створено
+        "409":
+          description: Конфлікт (час уже зайнятий іншою подією)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /events/{id}:
+    get:
+      tags:
+        - Events
+      summary: Отримати детальну інформацію про подію
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Інформацію отримано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    put:
+      tags:
+        - Events
+      summary: Редагувати існуючу подію
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreate"
+      responses:
+        "200":
+          description: Подію оновлено
+    delete:
+      tags:
+        - Events
+      summary: Видалити (скасувати) подію
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Подію скасовано
+  /events/{id}/invitations:
+    get:
+      tags:
+        - Invitations
+      summary: Отримати список усіх запрошених на цю подію
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Список запрошень отримано
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+    post:
+      tags:
+        - Invitations
+      summary: Надіслати запрошення учаснику
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationCreate"
+        required: true
+      responses:
+        "201":
+          description: Запрошення успішно надіслано
+        "404":
+          description: Подію або користувача не знайдено
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: pakin@example.com
+        name:
+          type: string
+          example: Олександр Пакін
+        created_at:
+          type: string
+          format: date-time
+          example: 2026-05-08T10:00:00Z
+    UserCreate:
+      required:
+        - email
+        - name
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          minLength: 2
+          type: string
+        password:
+          minLength: 8
+          type: string
+          format: password
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        title:
+          type: string
+          example: Лабораторна №5
+        description:
+          type: string
+          example: Захист OpenAPI специфікації
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        organizer_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    EventCreate:
+      required:
+        - end_time
+        - start_time
+        - title
+      type: object
+      properties:
+        title:
+          minLength: 3
+          type: string
+          example: Нова зустріч
+        description:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: integer
+        event_id:
+          type: integer
+        invitee_email:
+          type: string
+          format: email
+        status:
+          type: string
+          example: pending
+          enum:
+            - pending
+            - accepted
+            - declined
+    InvitationCreate:
+      required:
+        - invitee_email
+      type: object
+      properties:
+        invitee_email:
+          type: string
+          format: email
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Conflict
+        message:
+          type: string
+          example: На цей час уже запланована інша подія
+    users_id_body:
+      type: object
+      properties:
+        name:
+          type: string
